@@ -1,0 +1,79 @@
+# Prompt for Generating a Cobo WaaS 2 Demo Application
+
+---
+
+### Project Purpose
+
+Develop a minimal backend using python and FastAPI that showcases how to
+leverage Cobo's WaaS 2 APIs/SDKs (Wallet-as-a-Service). The demo should focus
+on implementing basic wallet features and demonstrate how to build applications
+on top of Cobo WaaS.
+
+---
+
+### Requirements
+
+1. **Authentication**
+   - Utilize API keys or organization access tokens to interact with the Cobo WaaS 2 API.
+
+2. **Wallet Features**
+
+   - List all crypto wallets owned by the user on Cobo.
+   - Display all tokens and balances for each wallet.
+   - Show transaction history for these wallets.
+   - Implement deposit and withdraw functionalities for transferring funds in and out of wallets.
+
+3. **Cobo SDKs**
+
+   - Use Cobo's WaaS 2 SDK for all API interactions.
+
+4. **Webhook Events**
+
+   - Subscribe to and handle webhook events from the Cobo WaaS 2 API.
+   - Can leverage webhook events to implement bots or AI agents.
+
+5. **Project Structure and Best Practices**
+
+   - Set up a basic project structure following best practices common in the python and FastAPI developer community.
+   - Ensure the code is modular to allow easy integration into larger applications.
+   - Implement necessary error handling and minimal logging.
+   - Include basic testing code (unit tests).
+
+6. **Security and Authentication**
+
+   - Pay special attention to authentication and security-related code, following best practices specific to python and fastAPI.
+   - Protect sensitive data and ensure secure API interactions.
+
+7. **API**
+   - Expose a RESTful API for frontend app to interact with the wallet features.
+   - Document the API endpoints and expected responses.
+
+---
+
+### Resources
+
+Include the following references in the project's `README.md` and utilize them during development:
+
+- **Cobo WaaS 2 API References:** [https://www.cobo.com/developers/v2/api-references/](https://www.cobo.com/developers/v2/api-references/)
+- **Cobo WaaS 2 Guides:** [https://www.cobo.com/developers/v2/guides/overview/introduction](https://www.cobo.com/developers/v2/guides/overview/introduction)
+- **Cobo WaaS SDKs:** [https://www.cobo.com/developers/v2/developer-tools/](https://www.cobo.com/developers/v2/developer-tools/)
+- **Cobo Portal Product Manual:** [https://manuals.cobo.com/en/portal/introduction](https://manuals.cobo.com/en/portal/introduction)
+
+---
+
+### Guidelines
+
+- **Architectural Patterns**
+  - Adopt the most popular or common architectural patterns used in the python/fastAPI community.
+  - Use common UI layouts for mobile and web applications.
+
+- **Libraries and Dependencies**
+  - Avoid unnecessary third-party libraries beyond Cobo's WaaS 2 SDK and UI toolkit.
+
+- **Focus**
+  - The primary goal is to demonstrate how to develop applications using Cobo WaaS features.
+  - Keep the demo basic and straightforward.
+
+- **Exclusions**
+  - No need for documentation generation.
+  - Exclude performance optimization techniques.

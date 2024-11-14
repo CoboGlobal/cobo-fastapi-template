@@ -23,7 +23,7 @@ else
     echo "You are in an exist Python virtual environment. Are you willing to install dependencies to current virtual environment?"
     select yn in "Yes" "No"; do
         case $yn in
-            Yes ) exit;;
+            Yes ) break;;
             No ) CREATE_VENV=1; break;;
         esac
     done

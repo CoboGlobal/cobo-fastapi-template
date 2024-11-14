@@ -1,0 +1,7 @@
+"app/":
+  - app_type:
+    - "!automation"
+
+"automation/":
+  - app_type:
+    - automation

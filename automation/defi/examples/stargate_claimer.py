@@ -1,4 +1,3 @@
-
 import uuid
 from automation.defi.core.automation import CoboAutomation
 from automation.defi.core.events import Action, Event
@@ -11,10 +10,9 @@ from typing import List
 from automation.defi.executors.devapi import DevApiExecutor, DevApiTransactionAction
 
 
-
 """
-Suppose we have an MPC wallet in Portal that has ETH assets doing yield farming in the 
-Stargate protocol on Base chain. We want to create a harvesting bot that executes once 
+Suppose we have an MPC wallet in Portal that has ETH assets doing yield farming in the
+Stargate protocol on Base chain. We want to create a harvesting bot that executes once
 reward is greater than a threshold.
 
 For this automation task, we would need to:
@@ -32,26 +30,35 @@ staking_lp_address = "<staking_lp_address>"
 stargate_multi_rewarder_address = "0x9Aa02D4Fae7F58b8E8f34c66E756cC734DAc7fe4"
 stargate_staking_address = "0xDFc47DCeF7e8f9Ab19a1b8Af3eeCF000C7ea0B80"
 
+
 async def get_stg_reward(w3: AsyncWeb3):
     stargate_multi_rewarder = w3.eth.contract(
         address=stargate_multi_rewarder_address,
         abi=[
             {
-                "inputs":[
-                    {"internalType":"contract IERC20","name":"stakingToken","type":"address"},
-                    {"internalType":"address","name":"user","type":"address"}
+                "inputs": [
+                    {
+                        "internalType": "contract IERC20",
+                        "name": "stakingToken",
+                        "type": "address",
+                    },
+                    {"internalType": "address", "name": "user", "type": "address"},
                 ],
-                "name":"getRewards",
-                "outputs":[
-                    {"internalType":"address[]","name":"","type":"address[]"},
-                    {"internalType":"uint256[]","name":"","type":"uint256[]"}
+                "name": "getRewards",
+                "outputs": [
+                    {"internalType": "address[]", "name": "", "type": "address[]"},
+                    {"internalType": "uint256[]", "name": "", "type": "uint256[]"},
                 ],
-                "stateMutability":"view","type":"function"
+                "stateMutability": "view",
+                "type": "function",
             }
-        ]
+        ],
     )
-    rewards = await stargate_multi_rewarder.functions.getRewards(staking_lp_address, wallet_address).call()
+    rewards = await stargate_multi_rewarder.functions.getRewards(
+        staking_lp_address, wallet_address
+    ).call()
     return rewards[1][0]
+
 
 async def collect_reward_events():
     """
@@ -68,15 +75,19 @@ async def build_claim_reward_request(amount: int):
         address=stargate_staking_address,
         abi=[
             {
-                "inputs":[
-                    {"internalType":"contract IERC20[]","name":"lpTokens","type":"address[]"},
+                "inputs": [
+                    {
+                        "internalType": "contract IERC20[]",
+                        "name": "lpTokens",
+                        "type": "address[]",
+                    },
                 ],
-                "name":"claim",
-                "outputs":[],
-                "stateMutability":"nonpayable",
-                "type":"function"
+                "name": "claim",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function",
             }
-        ]
+        ],
     )
     calldata = stargate_staking.encode_abi("claim", [[staking_lp_address]])
     return cobo_waas2.ContractCallParams(
@@ -86,7 +97,7 @@ async def build_claim_reward_request(amount: int):
             actual_instance=cobo_waas2.MpcContractCallSource(
                 wallet_id=wallet_id,
                 address=wallet_address,
-                source_type=cobo_waas2.ContractCallSourceType.USER_CONTROLLED
+                source_type=cobo_waas2.ContractCallSourceType.USER_CONTROLLED,
             )
         ),
         destination=cobo_waas2.ContractCallDestination(
@@ -98,6 +109,7 @@ async def build_claim_reward_request(amount: int):
         ),
     )
 
+
 async def claim_reward_strategy(event: Event) -> List[Action]:
     """
     Claim reward strategy, claim reward when reward is greater than a threshold
@@ -107,7 +119,6 @@ async def claim_reward_strategy(event: Event) -> List[Action]:
             request = await build_claim_reward_request(event.data["amount"])
             return [DevApiTransactionAction(data=request.model_dump())]
     return []
-
 
 
 async def main():
@@ -132,4 +143,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-

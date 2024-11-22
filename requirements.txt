@@ -4,3 +4,5 @@ python-dotenv==0.19.0
 pydantic==2.9.2
 cobo-waas2==1.6.0
 web3==7.4.0
+PyJWT==2.8.0
+cryptography==43.0.3

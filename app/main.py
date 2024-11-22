@@ -3,8 +3,13 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import router as api_router
-from config import settings
+from app.api.routes import router as api_router
+
+# %if app_type == portal
+from app.api.auth import router as auth_router
+
+# %endif
+from app.config import settings
 
 # Configure logging
 logging.basicConfig(
@@ -24,7 +29,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(api_router, prefix="/api")
+app.include_router(api_router, prefix="/api", tags=["API"])
+# %if app_type == portal
+app.include_router(auth_router, prefix="/auth", tags=["Auth"])
+# %endif
 
 
 @app.get("/")

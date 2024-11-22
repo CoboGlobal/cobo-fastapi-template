@@ -1,4 +1,3 @@
-
 import asyncio
 import time
 from typing import List
@@ -32,6 +31,7 @@ async def my_executor(action: Action):
     if action.type == "log":
         print(action.data["message"])
 
+
 # simple example to print a message every second
 async def main():
     automation = CoboAutomation()
@@ -55,4 +55,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-

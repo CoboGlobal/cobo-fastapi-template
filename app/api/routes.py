@@ -1,30 +1,54 @@
+import traceback
 from typing import Callable, Awaitable, Any, Optional, List, Dict, Annotated
 
-from fastapi import APIRouter, Request, Query, Body
+from cobo_waas2.exceptions import UnauthorizedException
+from fastapi import APIRouter, Request, Query, Body, Depends
 from fastapi.responses import JSONResponse
 
-from config import settings
-from models.wallet import WalletType, WalletSubtype
-from services.cobo_service import CoboService
+# %if app_type == portal
+from app.auth import get_org_id
+
+# %endif
+from app.models.wallet import WalletType, WalletSubtype
+from app.services.cobo_service import CoboService
 
 router = APIRouter()
-cobo_service = CoboService.get_instance(settings.COBO_API_SECRET, settings.COBO_ENV)
 
 
 async def execute_service_call(
     service_method: Callable[..., Awaitable[Any]], *args, **kwargs
 ) -> JSONResponse:
-    try:
+    async def _execute():
         result = await service_method(*args, **kwargs)
         result_dict = result.to_dict() if hasattr(result, "to_dict") else result
         if isinstance(result_dict, dict) and "data" in result_dict:
             return JSONResponse(content={"status": "success", **result_dict})
         else:
             return JSONResponse(content={"status": "success", "data": result_dict})
-    except Exception as e:
-        return JSONResponse(
-            content={"status": "error", "message": str(e)}, status_code=500
-        )
+
+    # %if app_type == portal
+    org_id = kwargs.pop("request_org_id")
+    retry_times = 1
+    while retry_times > 0:
+        try:
+            if not CoboService.cobo_api_client.configuration.access_token:
+                await CoboService.set_token_by_org_id(org_id)
+            return await _execute()
+        except UnauthorizedException as e:
+            retry_times -= 1
+            if retry_times == 0:
+                return JSONResponse(
+                    content={"status": "error", "message": str(e)}, status_code=500
+                )
+            await CoboService.set_token_by_org_id(org_id)
+        except Exception as e:
+            print(traceback.format_exc())
+            return JSONResponse(
+                content={"status": "error", "message": str(e)}, status_code=500
+            )
+    # %else
+    return await _execute()
+    # %endif
 
 
 @router.get("/wallets")
@@ -36,9 +60,12 @@ async def list_wallets(
     limit: int = Query(default=10, ge=1, le=50),
     before: Optional[str] = None,
     after: Optional[str] = None,
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
 ):
     return await execute_service_call(
-        cobo_service.list_wallets,
+        CoboService.list_wallets,
         wallet_type,
         wallet_subtype,
         project_id,
@@ -46,12 +73,26 @@ async def list_wallets(
         limit,
         before,
         after,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
     )
 
 
 @router.get("/wallets/{wallet_id}")
-async def get_wallet_by_id(wallet_id: str):
-    return await execute_service_call(cobo_service.get_wallet_by_id, wallet_id)
+async def get_wallet_by_id(
+    wallet_id: str,
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
+):
+    return await execute_service_call(
+        CoboService.get_wallet_by_id,
+        wallet_id,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
+    )
 
 
 @router.get("/wallets/{wallet_id}/balance")
@@ -61,9 +102,20 @@ async def get_wallet_balance(
     limit: int = Query(default=10, ge=1, le=50),
     before: Optional[str] = None,
     after: Optional[str] = None,
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
 ):
     return await execute_service_call(
-        cobo_service.get_wallet_balance, wallet_id, token_ids, limit, before, after
+        CoboService.get_wallet_balance,
+        wallet_id,
+        token_ids,
+        limit,
+        before,
+        after,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
     )
 
 
@@ -79,9 +131,12 @@ async def get_wallet_transactions(
     limit: int = Query(default=10, ge=1, le=50),
     before: Optional[str] = None,
     after: Optional[str] = None,
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
 ):
     return await execute_service_call(
-        cobo_service.get_wallet_transactions,
+        CoboService.get_wallet_transactions,
         wallet_id,
         types,
         statuses,
@@ -92,6 +147,9 @@ async def get_wallet_transactions(
         limit,
         before,
         after,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
     )
 
 
@@ -101,9 +159,19 @@ async def create_new_address(
     chain_id: Annotated[str, Body()],
     count: Annotated[Optional[int], Body(ge=1, le=50)] = 1,
     encoding: Annotated[Optional[str], Body()] = None,
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
 ):
     return await execute_service_call(
-        cobo_service.create_new_address, wallet_id, chain_id, count, encoding
+        CoboService.create_new_address,
+        wallet_id,
+        chain_id,
+        count,
+        encoding,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
     )
 
 
@@ -115,15 +183,21 @@ async def list_wallet_addresses(
     limit: int = Query(default=10, ge=1, le=50),
     before: Optional[str] = None,
     after: Optional[str] = None,
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
 ):
     return await execute_service_call(
-        cobo_service.list_wallet_addresses,
+        CoboService.list_wallet_addresses,
         wallet_id,
         chain_ids,
         addresses,
         limit,
         before,
         after,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
     )
 
 
@@ -139,9 +213,12 @@ async def withdraw_from_wallet(
     fee_token: Annotated[Optional[str], Body()] = None,
     force_external: Annotated[Optional[bool], Body()] = None,
     force_internal: Annotated[Optional[bool], Body()] = None,
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
 ):
     return await execute_service_call(
-        cobo_service.withdraw_from_wallet,
+        CoboService.withdraw_from_wallet,
         wallet_id,
         amount,
         token,
@@ -152,6 +229,9 @@ async def withdraw_from_wallet(
         fee_token,
         force_external,
         force_internal,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
     )
 
 
@@ -164,9 +244,12 @@ async def list_supported_chains(
     limit: int = Query(default=10, ge=1, le=50),
     before: Optional[str] = None,
     after: Optional[str] = None,
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
 ):
     return await execute_service_call(
-        cobo_service.list_supported_chains,
+        CoboService.list_supported_chains,
         wallet_type,
         wallet_subtype,
         chain_ids,
@@ -174,6 +257,9 @@ async def list_supported_chains(
         limit,
         before,
         after,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
     )
 
 
@@ -186,9 +272,12 @@ async def list_supported_tokens(
     limit: int = Query(default=10, ge=1, le=50),
     before: Optional[str] = None,
     after: Optional[str] = None,
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
 ):
     return await execute_service_call(
-        cobo_service.list_supported_tokens,
+        CoboService.list_supported_tokens,
         wallet_type,
         wallet_subtype,
         chain_ids,
@@ -196,13 +285,27 @@ async def list_supported_tokens(
         limit,
         before,
         after,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
     )
 
 
 @router.get("/wallets/check_address_validity")
-async def check_address_validity(chain_id: str = Query(...), address: str = Query(...)):
+async def check_address_validity(
+    chain_id: str = Query(...),
+    address: str = Query(...),
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
+):
     return await execute_service_call(
-        cobo_service.check_address_validity, chain_id, address
+        CoboService.check_address_validity,
+        chain_id,
+        address,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
     )
 
 
@@ -225,9 +328,12 @@ async def list_transactions(
     limit: int = Query(default=10, ge=1, le=50),
     before: Optional[str] = None,
     after: Optional[str] = None,
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
 ):
     return await execute_service_call(
-        cobo_service.list_transactions,
+        CoboService.list_transactions,
         request_id,
         cobo_ids,
         transaction_ids,
@@ -245,13 +351,25 @@ async def list_transactions(
         limit,
         before,
         after,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
     )
 
 
 @router.get("/transactions/{transaction_id}")
-async def get_transaction_by_id(transaction_id: str):
+async def get_transaction_by_id(
+    transaction_id: str,
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
+):
     return await execute_service_call(
-        cobo_service.get_transaction_by_id, transaction_id
+        CoboService.get_transaction_by_id,
+        transaction_id,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
     )
 
 
@@ -269,9 +387,12 @@ async def create_transfer_transaction(
     memo: Annotated[Optional[str], Body()] = None,
     note: Annotated[Optional[str], Body()] = None,
     extra_parameters: Annotated[Optional[Dict[str, Any]], Body()] = None,
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
 ):
     return await execute_service_call(
-        cobo_service.create_transfer_transaction,
+        CoboService.create_transfer_transaction,
         request_id,
         source_wallet_id,
         source_address,
@@ -284,6 +405,9 @@ async def create_transfer_transaction(
         memo,
         note,
         extra_parameters,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
     )
 
 
@@ -301,9 +425,12 @@ async def create_contract_call_transaction(
     gas_limit: Annotated[Optional[int], Body()] = None,
     note: Annotated[Optional[str], Body()] = None,
     extra_parameters: Annotated[Optional[Dict[str, Any]], Body()] = None,
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
 ):
     return await execute_service_call(
-        cobo_service.create_contract_call_transaction,
+        CoboService.create_contract_call_transaction,
         request_id,
         source_wallet_id,
         source_address,
@@ -316,6 +443,9 @@ async def create_contract_call_transaction(
         gas_limit,
         note,
         extra_parameters,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
     )
 
 
@@ -327,19 +457,36 @@ async def create_message_sign_transaction(
     message: Annotated[str, Body()],
     note: Annotated[Optional[str], Body()] = None,
     extra_parameters: Annotated[Optional[Dict[str, Any]], Body()] = None,
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
 ):
     return await execute_service_call(
-        cobo_service.create_message_sign_transaction,
+        CoboService.create_message_sign_transaction,
         request_id,
         source_wallet_id,
         source_address,
         message,
         note,
         extra_parameters,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
     )
 
 
 @router.post("/webhook")
-async def handle_webhook(request: Request):
+async def handle_webhook(
+    request: Request,
+    # %if app_type == portal
+    org_id: str = Depends(get_org_id),
+    # %endif
+):
     payload = await request.json()
-    return await execute_service_call(cobo_service.handle_webhook, payload)
+    return await execute_service_call(
+        CoboService.handle_webhook,
+        payload,
+        # %if app_type == portal
+        request_org_id=org_id,
+        # %endif
+    )

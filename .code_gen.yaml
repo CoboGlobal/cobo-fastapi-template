@@ -2,6 +2,18 @@
   - app_type:
     - "!automation"
 
+"app/api/auth.py":
+  - app_type:
+    - portal
+
+"app/auth.py":
+  - app_type:
+    - portal
+
+"app/cache.py":
+  - app_type:
+    - portal
+
 "automation/":
   - app_type:
     - automation

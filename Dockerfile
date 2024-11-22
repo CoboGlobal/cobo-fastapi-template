@@ -13,4 +13,5 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
 
 ENV GIT_TAG=${GIT_TAG}
-COPY app /src
+
+COPY ./app .

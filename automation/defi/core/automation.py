@@ -1,10 +1,15 @@
 import asyncio
 from typing import List, Union, Callable, AsyncIterable, Awaitable, Optional
 from .base import (
-    Collector, Strategy, Executor,
-    FunctionCollector, FunctionStrategy, FunctionExecutor
+    Collector,
+    Strategy,
+    Executor,
+    FunctionCollector,
+    FunctionStrategy,
+    FunctionExecutor,
 )
 from .events import Event, Action
+
 
 class CoboAutomation:
     def __init__(self):
@@ -17,8 +22,7 @@ class CoboAutomation:
         self._tasks: Optional[List[asyncio.Task]] = None
 
     def add_collector(
-        self, 
-        collector: Union[Collector, Callable[[], AsyncIterable[Event]]]
+        self, collector: Union[Collector, Callable[[], AsyncIterable[Event]]]
     ):
         if isinstance(collector, Collector):
             self.collectors.append(collector)
@@ -26,8 +30,7 @@ class CoboAutomation:
             self.collectors.append(FunctionCollector(collector))
 
     def add_strategy(
-        self, 
-        strategy: Union[Strategy, Callable[[Event], Awaitable[List[Action]]]]
+        self, strategy: Union[Strategy, Callable[[Event], Awaitable[List[Action]]]]
     ):
         if isinstance(strategy, Strategy):
             self.strategies.append(strategy)
@@ -35,8 +38,7 @@ class CoboAutomation:
             self.strategies.append(FunctionStrategy(strategy))
 
     def add_executor(
-        self, 
-        executor: Union[Executor, Callable[[Action], Awaitable[None]]]
+        self, executor: Union[Executor, Callable[[Action], Awaitable[None]]]
     ):
         if isinstance(executor, Executor):
             self.executors.append(executor)
@@ -47,21 +49,21 @@ class CoboAutomation:
         self.running = True
         start_tasks = [collector.start() for collector in self.collectors]
         await asyncio.gather(*start_tasks)
-        
+
         # Create and store all tasks
         self._tasks = [
-            asyncio.create_task(self._run_collector(collector)) 
+            asyncio.create_task(self._run_collector(collector))
             for collector in self.collectors
         ] + [
             asyncio.create_task(self._run_strategies()),
-            asyncio.create_task(self._run_executors())
+            asyncio.create_task(self._run_executors()),
         ]
 
     async def stop(self):
         self.running = False
         stop_tasks = [collector.stop() for collector in self.collectors]
         await asyncio.gather(*stop_tasks)
-        
+
         if self._tasks:
             await asyncio.gather(*self._tasks, return_exceptions=True)
             self._tasks = None

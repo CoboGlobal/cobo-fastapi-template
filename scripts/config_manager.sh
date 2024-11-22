@@ -123,10 +123,16 @@ generate_and_store_secret() {
 
 update_env_field() {
     local field_name=$1
-    local default_value=$2
-    if ! grep -q "^$field_name=" .env; then
-        echo "$field_name=$default_value" >> .env
-        echo "Added placeholder for $field_name."
+    local value=$2
+
+    # If the key exists, update its value
+    if grep -q "^$field_name=" .env; then
+        sed -i.bak "s/^$field_name=.*/$field_name=$value/" .env
+        echo "Updated $field_name in .env to $value."
+    else
+        # If the key does not exist, add it
+        echo "$field_name=$value" >> .env
+        echo "Added $field_name=$value to .env."
     fi
 }
 

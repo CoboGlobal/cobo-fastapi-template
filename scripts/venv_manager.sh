@@ -32,7 +32,13 @@ manage_virtual_environment() {
             read -p "Do you want to use the current virtual environment? (Y/n): " answer
             case $answer in
                 [Yy]*) break ;;
-                [Nn]*) create_and_activate_venv; break ;;
+                [Nn]*)
+                  if [[ -d "venv" ]]; then
+                      activate_existing_venv
+                  else
+                      create_and_activate_venv
+                  fi
+                  break ;;
                 *) print_error "Invalid input. Please enter Y/y or N/n." ;;
             esac
         done

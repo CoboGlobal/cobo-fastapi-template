@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import Optional, List, Dict, Any
 
@@ -59,8 +58,8 @@ class CoboService:
     @classmethod
     async def set_token_by_org_id(cls, org_id: str):
         resp = await CoboService.oauth_token(org_id)
-        access_token = resp.get("access_token")
-        refresh_token = resp.get("refresh_token")
+        access_token = resp.access_token
+        refresh_token = resp.refresh_token
         portal_org_token_cache[org_id] = dict(
             access_token=access_token,
             refresh_token=refresh_token,
@@ -76,22 +75,11 @@ class CoboService:
         api_instance = OAuthApi(cls.cobo_api_client)
         try:
             logger.info("Calling OAuthApi -> get_token")
-            _param = api_instance._get_token_serialize(
+            return api_instance.get_token(
                 client_id=settings.COBO_APP_CLIENT_ID,
                 org_id=org_id,
                 grant_type="org_implicit",
             )
-            response_data = cls.cobo_api_client.call_api(
-                *_param,
-            )
-            response_data.read()
-            return json.loads(response_data.data.decode("utf-8"))
-            # todo use sdk to get token
-            # return api_instance.get_token(
-            #     client_id=settings.COBO_APP_CLIENT_ID,
-            #     org_id=org_id,
-            #     grant_type="org_implicit"
-            # )
         except ApiException as e:
             logger.error(f"Exception when calling OAuthApi -> get_token: {e}\n")
             raise
